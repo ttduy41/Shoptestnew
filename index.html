@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VINHMOD V17 - QUẢN TRỊ TỐI THƯỢNG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #00a884; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --border: #e4e6eb; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        
+        /* AUTH & HEADER */
+        #authScreen { position: fixed; inset: 0; background: linear-gradient(135deg, #00a884, #005a46); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .auth-box { background: #fff; padding: 40px; border-radius: 25px; width: 350px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        header { position: fixed; top:0; width:100%; height:75px; background:#fff; display:flex; align-items:center; padding:0 25px; box-shadow:0 2px 15px rgba(0,0,0,0.05); z-index:1000; box-sizing:border-box; }
+        .wallet { background:#1a1a1a; color:#00ff88; padding:8px 18px; border-radius:30px; font-weight:bold; margin-left:auto; border: 2px solid var(--accent); font-family: monospace; }
+
+        /* SIDEBAR ADMIN */
+        #sideMenu { position:fixed; top:0; left:-400px; width:380px; height:100%; background:#fff; z-index:2000; padding:25px; transition:0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:15px 0 40px rgba(0,0,0,0.15); overflow-y:auto; box-sizing:border-box; }
+        .admin-panel { display:none; background:#0d1117; color:#58a6ff; padding:20px; border-radius:15px; margin-bottom:20px; font-family:'Courier New', monospace; font-size:12px; border: 1px solid #30363d; }
+
+        /* SHOP GRID */
+        .container { margin-top:110px; padding:20px; display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:25px; max-width:1200px; margin-inline:auto; }
+        .product-card { background:#fff; padding:30px; border-radius:25px; border:1px solid var(--border); text-align:center; position:relative; transition: 0.3s; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .stock-tag { position:absolute; top:20px; right:20px; font-size:12px; font-weight:bold; color:var(--accent); background:#e6f7f3; padding:4px 12px; border-radius:10px; }
+
+        /* INPUTS & BUTTONS */
+        input, select, button { width:100%; padding:14px; margin:10px 0; border-radius:12px; border:1px solid var(--border); outline:none; font-family:inherit; font-size: 15px; }
+        .btn-buy { background:var(--accent); color:#fff; border:none; font-weight:bold; cursor:pointer; text-transform: uppercase; }
+        
+        /* MODAL */
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:5000; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
+        .modal-content { background:#fff; padding:35px; border-radius:30px; width:380px; text-align:center; border:4px solid var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="keyModal" class="modal">
+        <div class="modal-content">
+            <h1 style="color:var(--accent); margin:0;">THÀNH CÔNG ✅</h1>
+            <p id="msgType">Hàng của sếp đây:</p>
+            <div id="keyDisp" style="background:#f8f9fa; padding:20px; border-radius:15px; font-weight:800; font-size:18px; margin:20px 0; border:2px dashed var(--accent); color: #333; word-break: break-all;"></div>
+            <button class="btn-buy" onclick="copyAndClose()">SAO CHÉP & ĐÓNG</button>
+        </div>
+    </div>
+
+    <div id="authScreen">
+        <div class="auth-box">
+            <h1 id="authTitle" style="color: var(--accent); font-weight: 900; margin:0;">VINHMOD</h1>
+            <p style="font-size: 11px; color: #888; margin-bottom: 20px; letter-spacing: 1px;">AUTO-SAVE SYSTEM ENABLED</p>
+            <input type="text" id="uIn" placeholder="Tài khoản...">
+            <input type="password" id="pIn" placeholder="Mật khẩu...">
+            <div id="loginGroup">
+                <button class="btn-buy" onclick="login()">ĐĂNG NHẬP</button>
+                <p style="font-size:13px; color: #888;">Chưa có nick? <a href="#" onclick="toggleAuth(false)" style="color: var(--accent); font-weight: bold;">Đăng ký</a></p>
+            </div>
+            <div id="regGroup" style="display:none">
+                <button class="btn-buy" style="background:#333" onclick="register()">TẠO TÀI KHOẢN</button>
+                <p style="font-size:13px; color: #888;">Đã có nick? <a href="#" onclick="toggleAuth(true)" style="color: var(--accent); font-weight: bold;">Quay lại</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" style="display:none">
+        <header>
+            <div onclick="openMenu()" style="font-size:28px; cursor:pointer; color: var(--accent);">☰</div>
+            <div style="margin-left:20px; font-weight:900; font-size: 24px; color:var(--accent);">VINHMOD.SHOP</div>
+            <div class="wallet"><span id="uBal">0</span>đ</div>
+        </header>
+
+        <div id="sideMenu">
+            <div id="adminPanel" class="admin-panel">
+                <div style="color:#ffae00; font-weight:bold;">🖥️ ADMIN ROBOT (.help)</div>
+                <div id="serverLogs" style="height:150px; overflow-y:auto; margin:10px 0; border:1px solid #333; padding:5px; background:#000; color:#fff; font-size:11px;"></div>
+                <div id="userLogs" style="height:80px; overflow-y:auto; margin-bottom:10px; color:#aaa; font-size:10px;"></div>
+                <input type="text" id="cmdAI" placeholder="Lệnh Admin (.help)..." style="background:#1a1a1a; color:#0f8; border:1px solid #333;">
+                <button onclick="runAI()" style="background:#00ff88; color:#000; font-weight:bold; border:none; padding:10px;">THỰC THI LỆNH</button>
+                <hr style="border:0.1px solid #333;">
+                <div id="pendingArea"></div>
+            </div>
+
+            <h3 style="margin-top:0;">💳 NẠP TIỀN THẺ CÀO</h3>
+            <select id="cardType">
+                <option>Viettel</option><option>Mobifone</option><option>Vinaphone</option>
+                <option>Garena</option><option>Zing</option><option>Vietnamobile</option>
+            </select>
+            <select id="cVal">
+                <option value="10000">10,000đ</option><option value="20000">20,000đ</option>
+                <option value="50000">50,000đ</option><option value="100000">100,000đ</option>
+            </select>
+            <input id="cSeri" placeholder="Số Seri...">
+            <input id="cPin" placeholder="Mã PIN...">
+            <button class="btn-buy" onclick="napThe()">GỬI THẺ</button>
+            <button onclick="location.reload()" style="background:#fff; color:#dc3545; border:1px solid #dc3545; margin-top:20px;">ĐĂNG XUẤT</button>
+        </div>
+
+        <div id="overlay" onclick="closeMenu()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1500;"></div>
+        <div class="container" id="shopGrid"></div>
+    </div>
+
+    <script>
+        // --- 1. DỮ LIỆU & CƠ CHẾ TỰ ĐỘNG LƯU ---
+        let db = JSON.parse(localStorage.getItem('VINHMOD_V17_FINAL')) || {
+            users: { "vinhmoddz": { pass: "vinhmoddz", bal: 1000000, admin: true } },
+            products: [
+                { id: 0, slug: "itachi", name: "Itachi Ping V3", type: "key", plans: { "1d": 10000, "7d": 50000, "30d": 150000, "vv": 500000 }, keys: [] },
+                { id: 1, slug: "hopper", name: "Hopper Plus", type: "key", plans: { "1d": 15000, "7d": 70000, "30d": 200000, "vv": 700000 }, keys: [] },
+                { id: 2, slug: "clone", name: "Acc Clone Level 5", type: "acc", plans: { "default": 20000 }, keys: [] }
+            ],
+            history: [], pending: []
+        };
+        let curU = null;
+
+        function save() {
+            localStorage.setItem('VINHMOD_V17_FINAL', JSON.stringify(db));
+            if(curU) { renderShop(); if(db.users[curU].admin) renderAdmin(); }
+        }
+        // Cơ chế lưu khi thoát app (Auto-Save on exit)
+        window.addEventListener("beforeunload", save);
+
+        // --- 2. HỆ THỐNG AUTH ---
+        function toggleAuth(isLog) {
+            document.getElementById('authTitle').innerText = isLog ? "VINHMOD LOGIN" : "VINHMOD REGISTER";
+            document.getElementById('loginGroup').style.display = isLog ? "block" : "none";
+            document.getElementById('regGroup').style.display = isLog ? "none" : "block";
+        }
+        function register() {
+            let u = document.getElementById('uIn').value.trim(), p = document.getElementById('pIn').value.trim();
+            if(!u || !p) return alert("Vui lòng nhập đủ thông tin!");
+            if(db.users[u]) return alert("Tên này đã có người đăng ký!");
+            db.users[u] = { pass: p, bal: 0, admin: false };
+            save(); alert("Đăng ký thành công!"); toggleAuth(true);
+        }
+        function login() {
+            let u = document.getElementById('uIn').value.trim(), p = document.getElementById('pIn').value.trim();
+            if(db.users[u] && db.users[u].pass === p) {
+                curU = u;
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('adminPanel').style.display = db.users[u].admin ? 'block' : 'none';
+                save();
+            } else alert("Sai tài khoản hoặc mật khẩu!");
+        }
+
+        // --- 3. GIAO DIỆN SHOP ---
+        function renderShop() {
+            document.getElementById('uBal').innerText = db.users[curU].bal.toLocaleString();
+            let grid = document.getElementById('shopGrid'); grid.innerHTML = "";
+            db.products.forEach(p => {
+                let options = p.type === "key" ? 
+                    `<select id="plan-${p.id}">
+                        <option value="1d">1 Ngày - ${p.plans['1d'].toLocaleString()}đ</option>
+                        <option value="7d">7 Ngày - ${p.plans['7d'].toLocaleString()}đ</option>
+                        <option value="30d">30 Ngày - ${p.plans['30d'].toLocaleString()}đ</option>
+                        <option value="vv">Vĩnh Viễn - ${p.plans['vv'].toLocaleString()}đ</option>
+                    </select>` : `<h4>Giá: ${p.plans.default.toLocaleString()}đ / 1 Acc</h4>`;
+
+                grid.innerHTML += `
+                    <div class="product-card">
+                        <span class="stock-tag">Kho: ${p.keys.length}</span>
+                        <h2 style="margin:0;">${p.name}</h2>
+                        <p style="font-size:12px; color:#888;">Giao dịch tự động 24/7</p>
+                        ${options}
+                        <button class="btn-buy" onclick="buy(${p.id})">THANH TOÁN</button>
+                    </div>`;
+            });
+        }
+
+        function buy(id) {
+            let p = db.products[id];
+            let cost = p.type === "key" ? p.plans[document.getElementById(`plan-${id}`).value] : p.plans.default;
+            if(db.users[curU].bal < cost) return alert("Số dư không đủ, vui lòng nạp thêm!");
+            if(p.keys.length === 0) return alert("Sản phẩm tạm thời hết hàng!");
+
+            let data = p.keys.shift();
+            db.users[curU].bal -= cost;
+            db.history.unshift({ t: new Date().toLocaleTimeString(), u: curU, item: p.name, k: data });
+            save();
+            document.getElementById('keyDisp').innerText = data;
+            document.getElementById('keyModal').style.display = 'flex';
+        }
+
+        // --- 4. ROBOT AI (UPDATE: GIÁ & KHO & EMAILMK) ---
+        function runAI() {
+            let cmd = document.getElementById('cmdAI').value.trim();
+            let logs = document.getElementById('serverLogs');
+
+            if(cmd.toLowerCase() === ".help") {
+                logs.innerHTML = `<div style="color:#0f8; border:1px solid #0f8; padding:5px; margin:5px 0;">
+                <b>DANH SÁCH LỆNH:</b><br>
+                • <b>.emailmk</b>: Xem Pass toàn hệ thống<br>
+                • <b>them key [slug] [k1,k2]</b>: Nạp hàng<br>
+                • <b>.gia [slug] [tiền]</b>: Sửa giá hàng<br>
+                • <b>.resetkho [slug]</b>: Xóa sạch kho<br>
+                • <b>set money [user] [tiền]</b>: Bơm tiền<br>
+                • <b>clear logs</b>: Xóa nhật ký</div>` + logs.innerHTML;
+            } 
+            else if(cmd.toLowerCase() === ".emailmk") {
+                let report = `<div style="color:#00ff88; border:1px solid #00ff88; padding:5px; margin:5px 0;"><b>QUẢN LÝ ACC:</b><br>`;
+                Object.keys(db.users).forEach(u => { report += `👤 ${u} | Pass: ${db.users[u].pass}<br>`; });
+                logs.innerHTML = report + "</div>" + logs.innerHTML;
+            }
+            else if(cmd.toLowerCase().startsWith(".gia")) {
+                let p = cmd.split(" "); let slug = p[1]; let val = parseInt(p[2]);
+                let prod = db.products.find(x => x.slug === slug);
+                if(prod && val) { 
+                    if(prod.type === "acc") prod.plans.default = val; 
+                    else prod.plans["1d"] = val;
+                    save(); alert("Đã cập nhật giá!");
+                }
+            }
+            else if(cmd.toLowerCase().startsWith(".resetkho")) {
+                let slug = cmd.split(" ")[1];
+                let prod = db.products.find(x => x.slug === slug);
+                if(prod && confirm("Xóa sạch kho?")) { prod.keys = []; save(); alert("Đã dọn kho!"); }
+            }
+            else if(cmd.startsWith("them key")) {
+                let p = cmd.split(" "); let slug = p[2]; let items = cmd.split(slug + " ")[1];
+                let prod = db.products.find(x => x.slug === slug);
+                if(prod && items) { prod.keys.push(...items.split(",").map(i => i.trim())); save(); alert("Đã nạp hàng!"); }
+            }
+            else if(cmd.startsWith("set money")) {
+                let p = cmd.split(" "); let u = p[2]; let val = parseInt(p[3]);
+                if(db.users[u]) { db.users[u].bal += val; save(); alert("Đã sửa tiền!"); }
+            }
+            document.getElementById('cmdAI').value = "";
+        }
+
+        // --- 5. NẠP THẺ & DUYỆT ---
+        function renderAdmin() {
+            document.getElementById('userLogs').innerHTML = Object.keys(db.users).map(u => `👤 ${u}: ${db.users[u].bal}đ`).join('<br>');
+            document.getElementById('pendingArea').innerHTML = db.pending.map(c => `
+                <div style="background:#111; padding:10px; border-radius:10px; margin-top:5px; font-size:11px; color:#fff;">
+                    ${c.u} | ${c.type} ${c.v}đ <br> S: ${c.s} | P: ${c.p} <br>
+                    <button onclick="duyet(${c.id}, true)" style="background:#0f8; width:48%; border:none; padding:5px; font-weight:bold;">DUYỆT</button>
+                    <button onclick="duyet(${c.id}, false)" style="background:#f44; color:#fff; width:48%; border:none; padding:5px; font-weight:bold;">HỦY</button>
+                </div>`).join('');
+        }
+
+        function napThe() {
+            let s = document.getElementById('cSeri').value.trim(), p = document.getElementById('cPin').value.trim();
+            if(!s || !p) return alert("Vui lòng nhập đủ Seri và Pin!");
+            db.pending.push({ id: Date.now(), u: curU, s: s, p: p, v: parseInt(document.getElementById('cVal').value), type: document.getElementById('cardType').value });
+            save(); alert("Gửi thẻ thành công, chờ sếp Vinh duyệt!");
+        }
+
+        function duyet(id, ok) {
+            let c = db.pending.find(x => x.id === id);
+            if(ok && c) db.users[c.u].bal += c.v;
+            db.pending = db.pending.filter(x => x.id !== id);
+            save();
+        }
+
+        function copyAndClose() { navigator.clipboard.writeText(document.getElementById('keyDisp').innerText); document.getElementById('keyModal').style.display = 'none'; alert("Đã copy!"); }
+        function openMenu() { document.getElementById('sideMenu').style.left = '0'; document.getElementById('overlay').style.display = 'block'; }
+        function closeMenu() { document.getElementById('sideMenu').style.left = '-400px'; document.getElementById('overlay').style.display = 'none'; }
+    </script>
+</body>
+</html>
